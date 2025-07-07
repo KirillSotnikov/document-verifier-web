@@ -9,8 +9,7 @@
     "build-ci": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check-types": "tsc --noEmit",
-    "generate:vault-api": "npx swagger-typescript-api@13.0.0 -p https://api-dev.airlock-dev.guardian-dev.com/openapi-json -o src/services/air-lock-api/generated -n air-lock-api-client.ts --api-class-name AirLockApiClient --disable-throw-on-error --axios -t src/services/air-lock-api/templates"
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.2",
