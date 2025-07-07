@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /
+
+Host: https://document-verifier.kravatka.agency
+Sitemap: https://document-verifier.kravatka.agency/sitemap.xml
