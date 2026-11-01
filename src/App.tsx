@@ -1,7 +1,7 @@
 import { Navigation } from './navigation';
 import { BrowserRouter } from 'react-router-dom';
 import { WagmiProvider } from 'wagmi';
-import { polygonAmoy, sepolia } from 'wagmi/chains';
+import { polygonAmoy, sepolia, monadTestnet } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { ToastContainer } from 'react-toastify';
@@ -11,7 +11,7 @@ import '@rainbow-me/rainbowkit/styles.css';
 
 const config = getDefaultConfig({
   appName: 'Document Verifier',
-  chains: [sepolia, polygonAmoy],
+  chains: [sepolia, polygonAmoy, monadTestnet],
   projectId: import.meta.env.VITE_PROJECT_ID,
   ssr: false, // If your dApp uses server side rendering (SSR)
 });

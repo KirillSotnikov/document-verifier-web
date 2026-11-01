@@ -111,6 +111,17 @@ export const Footer: FC = () => {
                       {CONTRACT_ADDRESSES.ETHEREUM_SEPOLIA.DOCUMENT_VERIFIER.slice(0, 10)}...{CONTRACT_ADDRESSES.ETHEREUM_SEPOLIA.DOCUMENT_VERIFIER.slice(-8)}
                     </a>
                   </div>
+                  <div>
+                    <p className="text-gray-400 text-xs mb-1">{NETWORKS.MONAD_TESTNET.name}</p>
+                    <a
+                      href={getExplorerUrl('ETHEREUM_SEPOLIA', CONTRACT_ADDRESSES.MONAD_TESTNET.DOCUMENT_VERIFIER)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-xs font-mono break-all transition-colors duration-200 block"
+                    >
+                      {CONTRACT_ADDRESSES.MONAD_TESTNET.DOCUMENT_VERIFIER.slice(0, 10)}...{CONTRACT_ADDRESSES.MONAD_TESTNET.DOCUMENT_VERIFIER.slice(-8)}
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -119,4 +130,4 @@ export const Footer: FC = () => {
       </div>
     </footer>
   );
-}; 
+};

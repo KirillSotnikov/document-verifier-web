@@ -1,14 +1,10 @@
 import { useChainId } from 'wagmi';
-import { NETWORKS, getContractAddress } from './config';
+import { getContractAddress, getNetwork } from './config';
 
 export const useCurrentNetwork = () => {
   const chainId = useChainId();
 
-  const currentNetwork = chainId === NETWORKS.POLYGON_AMOY.chainId 
-    ? 'POLYGON_AMOY' 
-    : chainId === NETWORKS.ETHEREUM_SEPOLIA.chainId 
-    ? 'ETHEREUM_SEPOLIA' 
-    : null;
+  const currentNetwork = getNetwork(chainId);
 
   const contractAddress = currentNetwork ? getContractAddress(currentNetwork) : null;
 
@@ -18,4 +14,4 @@ export const useCurrentNetwork = () => {
     chainId,
     isSupported: !!currentNetwork,
   };
-}; 
+};

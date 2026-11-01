@@ -1,17 +1,13 @@
 import { FC, useState } from 'react';
 import { useChainId, useSwitchChain } from 'wagmi';
-import { NETWORKS } from '../../hooks/config';
+import { getNetwork, NETWORKS } from '../../hooks/config';
 
 export const NetworkSelector: FC = () => {
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentNetwork = chainId === NETWORKS.POLYGON_AMOY.chainId 
-    ? 'POLYGON_AMOY' 
-    : chainId === NETWORKS.ETHEREUM_SEPOLIA.chainId 
-    ? 'ETHEREUM_SEPOLIA' 
-    : null;
+  const currentNetwork = getNetwork(chainId);
 
   const handleNetworkSwitch = (networkKey: keyof typeof NETWORKS) => {
     const targetChainId = NETWORKS[networkKey].chainId;
@@ -37,6 +33,13 @@ export const NetworkSelector: FC = () => {
             <path d="M12 4c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 14c-3.314 0-6-2.686-6-6s2.686-6 6-6 6 2.686 6 6-2.686 6-6 6z"/>
           </svg>
         );
+      case 'MONAD_TESTNET':
+        return (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.374 0 0 5.374 0 12s5.374 12 12 12 12-5.374 12-12S18.626 0 12 0zm0 22C6.486 22 2 17.514 2 12S6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
+            <path d="M12 4c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 14c-3.314 0-6-2.686-6-6s2.686-6 6-6 6 2.686 6 6-2.686 6-6 6z"/>
+          </svg>
+        );
       default:
         return null;
     }
@@ -44,10 +47,12 @@ export const NetworkSelector: FC = () => {
 
   const getNetworkColor = (networkKey: keyof typeof NETWORKS) => {
     switch (networkKey) {
-      case 'POLYGON_AMOY':
+      case 'MONAD_TESTNET':
         return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'ETHEREUM_SEPOLIA':
         return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'POLYGON_AMOY':
+        return 'text-red-600 bg-red-50 border-red-200';
       default:
         return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -125,4 +130,4 @@ export const NetworkSelector: FC = () => {
       )}
     </div>
   );
-}; 
+};
