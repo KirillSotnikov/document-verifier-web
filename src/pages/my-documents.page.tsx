@@ -1,24 +1,33 @@
 import { useState, useEffect } from 'react';
-import { useUserDocuments, useUpdateDocumentName } from '../hooks';
+import { Link } from 'react-router-dom';
 import { useAccount } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useUserDocuments, useUpdateDocumentName } from '../hooks';
+import { openSuccessNotification } from '../helper/toast.helper.ts';
+import { NavigationRoutes } from '../../types.ts';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Notice, readableError } from '../components/ui/Notice';
+import { Button } from '../components/ui/Button';
+import { FingerprintStrip, truncateMiddle } from '../components/ui/HashFingerprint';
+import { CopyIcon, DocumentIcon, PencilIcon, RefreshIcon, Spinner, WalletIcon } from '../components/ui/icons';
 
 export const MyDocumentsPage = () => {
   const { address, isConnected } = useAccount();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
 
-  const { 
-    documents, 
-    getUserDocuments, 
-    isLoading: isLoadingDocuments, 
+  const {
+    documents,
+    getUserDocuments,
+    isLoading: isLoadingDocuments,
     error: documentsError
   } = useUserDocuments(address);
 
-  const { 
-    updateDocumentName, 
-    isSuccess: isUpdateSuccess, 
-    error: updateError, 
-    isLoading: isUpdating 
+  const {
+    updateDocumentName,
+    isSuccess: isUpdateSuccess,
+    error: updateError,
+    isLoading: isUpdating
   } = useUpdateDocumentName();
 
   useEffect(() => {
@@ -53,258 +62,196 @@ export const MyDocumentsPage = () => {
     }
   };
 
-  const formatDate = (timestamp: bigint) => {
-    return new Date(Number(timestamp) * 1000).toLocaleString();
+  const handleCopy = (value: string, label: string) => {
+    navigator.clipboard.writeText(value);
+    openSuccessNotification(`${label} copied`);
   };
 
-  const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
-  const truncateHash = (hash: string) => {
-    return `${hash.slice(0, 10)}...${hash.slice(-8)}`;
-  };
+  const formatDate = (timestamp: bigint) =>
+    new Date(Number(timestamp) * 1000).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
   if (!isConnected) {
     return (
-      <div className="bg-gradient-to-br from-purple-50 to-pink-100 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Connect Your Wallet</h1>
-            <p className="text-lg text-gray-600">
-              Please connect your wallet to view your registered documents
-            </p>
+      <div className="py-10 sm:py-14">
+        <PageHeader
+          title="My documents"
+          description="Everything you've registered from your wallet, newest first."
+        />
+        <div className="mt-8 flex flex-col items-center rounded-lg border border-dashed border-rule bg-sheet px-6 py-16 text-center">
+          <span className="flex size-12 items-center justify-center rounded-full border border-rule bg-paper text-ink-soft">
+            <WalletIcon className="size-5" />
+          </span>
+          <h2 className="mt-4 text-lg font-semibold text-ink">Connect a wallet to see your documents</h2>
+          <p className="mt-1 max-w-sm text-sm text-ink-soft">
+            Documents are listed by the wallet address that registered them.
+          </p>
+          <div className="mt-6">
+            <ConnectButton chainStatus="none" showBalance={false} />
           </div>
         </div>
       </div>
     );
   }
 
+  const sortedDocuments = documents
+    ? documents.slice().sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
+    : [];
+
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-pink-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            My Documents
-          </h1>
-          <p className="text-lg text-gray-600 max-w-md mx-auto">
-            View and manage all your registered documents on the blockchain
-          </p>
-          {/* {address && (
-            <p className="text-sm text-gray-500 mt-2">
-              Connected: {truncateAddress(address)}
-            </p>
-          )} */}
-        </div>
+    <div className="py-10 sm:py-14">
+      <PageHeader
+        title="My documents"
+        description="Everything you've registered from your wallet, newest first."
+        aside={
+          documents && documents.length > 0 ? (
+            <Button
+              variant="secondary"
+              onClick={() => address && getUserDocuments(address)}
+              disabled={isLoadingDocuments}
+            >
+              <RefreshIcon className={`size-4 ${isLoadingDocuments ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          ) : undefined
+        }
+      />
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Loading State */}
-          {isLoadingDocuments && (
-            <div className="text-center py-12">
-              <div className="mx-auto w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-4"></div>
-              <p className="text-gray-600">Loading your documents...</p>
+      <div className="mt-8 space-y-4">
+        {isLoadingDocuments && (
+          <div className="flex items-center justify-center gap-3 rounded-lg border border-rule bg-sheet py-16 text-sm text-ink-soft">
+            <Spinner className="text-stamp" />
+            Loading your documents…
+          </div>
+        )}
+
+        {documentsError && (
+          <Notice tone="error" title="Couldn't load your documents">
+            {readableError(documentsError)}
+          </Notice>
+        )}
+
+        {updateError && (
+          <Notice tone="error" title="Rename failed">
+            {readableError(updateError)}
+          </Notice>
+        )}
+
+        {isUpdateSuccess && <Notice tone="success" title="Document renamed" />}
+
+        {!isLoadingDocuments && documents && (
+          documents.length === 0 ? (
+            <div className="flex flex-col items-center rounded-lg border border-dashed border-rule bg-sheet px-6 py-16 text-center">
+              <span className="flex size-12 items-center justify-center rounded-full border border-rule bg-paper text-ink-soft">
+                <DocumentIcon className="size-5" />
+              </span>
+              <h2 className="mt-4 text-lg font-semibold text-ink">No documents registered yet</h2>
+              <p className="mt-1 max-w-sm text-sm text-ink-soft">
+                Register a document and it will appear here with its fingerprint and registration date.
+              </p>
+              <Link
+                to={NavigationRoutes.root}
+                className="mt-6 inline-flex h-10 items-center rounded-md bg-stamp px-4 text-sm font-medium text-white transition-colors hover:bg-stamp-dark"
+              >
+                Register a document
+              </Link>
             </div>
-          )}
-
-          {documentsError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-red-800">Error loading documents</p>
-                  <p className="text-xs text-red-600 mt-1">{documentsError.message}</p>
-                </div>
+          ) : (
+            <div className="overflow-hidden rounded-lg border border-rule bg-sheet">
+              <div className="flex items-center justify-between border-b border-rule bg-paper/60 px-5 py-2.5 text-xs font-medium text-ink-faint">
+                <span>
+                  {documents.length} {documents.length === 1 ? 'document' : 'documents'}
+                </span>
+                <span className="hidden sm:inline">Registered</span>
               </div>
-            </div>
-          )}
-
-          {!isLoadingDocuments && documents && (
-            <>
-              {documents.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No documents found</h3>
-                  <p className="text-gray-500">
-                    You haven't registered any documents yet. Start by uploading a document!
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      Your Documents ({documents.length})
-                    </h2>
-                    <button
-                      onClick={() => address && getUserDocuments(address)}
-                      className="text-purple-600 hover:text-purple-700 text-sm font-medium"
-                    >
-                      Refresh
-                    </button>
-                  </div>
-
-                  <div className="grid gap-6">
-                    {documents
-                      .slice()
-                      .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
-                      .map((doc) => (
-                      <div
-                        key={doc.documentHash}
-                        className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="mb-4">
-                              {editingId === doc.documentHash ? (
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="text"
-                                    value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
-                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                    placeholder="Enter new name"
-                                  />
-                                  <button
-                                    onClick={() => handleSaveEdit(doc.documentHash as `0x${string}`)}
-                                    disabled={isUpdating}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 text-sm"
-                                  >
-                                    {isUpdating ? 'Saving...' : 'Save'}
-                                  </button>
-                                  <button
-                                    onClick={handleCancelEdit}
-                                    disabled={isUpdating}
-                                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 disabled:bg-gray-200 text-sm"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center space-x-2">
-                                  <h3 className="text-lg font-semibold text-gray-900 truncate">
-                                    {doc.documentName}
-                                  </h3>
-                                  <button
-                                    onClick={() => handleEditClick(doc.documentHash, doc.documentName)}
-                                    className="text-gray-400 hover:text-purple-600 transition-colors duration-200"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              )}
+              <ul className="divide-y divide-rule-soft">
+                {sortedDocuments.map((doc) => {
+                  const isEditing = editingId === doc.documentHash;
+                  return (
+                    <li key={doc.documentHash} className="group px-5 py-4 transition-colors hover:bg-paper/40">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+                        <div className="min-w-0 flex-1">
+                          {isEditing ? (
+                            <form
+                              className="flex flex-wrap items-center gap-2"
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleSaveEdit(doc.documentHash as `0x${string}`);
+                              }}
+                            >
+                              <label htmlFor={`rename-${doc.documentHash}`} className="sr-only">
+                                New name
+                              </label>
+                              <input
+                                id={`rename-${doc.documentHash}`}
+                                type="text"
+                                value={editName}
+                                autoFocus
+                                onChange={(e) => setEditName(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Escape' && handleCancelEdit()}
+                                disabled={isUpdating}
+                                className="h-9 min-w-0 flex-1 rounded-md border border-rule bg-sheet px-3 text-sm text-ink focus:border-stamp focus:outline-none focus:ring-2 focus:ring-stamp/20"
+                                placeholder="Document name"
+                              />
+                              <Button type="submit" disabled={isUpdating || !editName.trim()} className="!h-9">
+                                {isUpdating ? <><Spinner /> Saving…</> : 'Save name'}
+                              </Button>
+                              <Button variant="ghost" onClick={handleCancelEdit} disabled={isUpdating} className="!h-9">
+                                Cancel
+                              </Button>
+                            </form>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <h3 className="truncate text-[15px] font-semibold text-ink" title={doc.documentName}>
+                                {doc.documentName}
+                              </h3>
+                              <button
+                                onClick={() => handleEditClick(doc.documentHash, doc.documentName)}
+                                aria-label={`Rename ${doc.documentName}`}
+                                title="Rename"
+                                className="rounded p-1 text-ink-faint opacity-100 transition hover:bg-paper hover:text-stamp sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                              >
+                                <PencilIcon className="size-3.5" />
+                              </button>
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                  Document Hash
-                                </label>
-                                <p className="text-sm font-mono text-gray-900 break-all">
-                                  {truncateHash(doc.documentHash)}
-                                </p>
-                              </div>
-                              
-                              <div>
-                                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                  Registration Date
-                                </label>
-                                <p className="text-sm text-gray-900">
-                                  {formatDate(doc.timestamp)}
-                                </p>
-                              </div>
-                              
-                              <div>
-                                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                                  Owner
-                                </label>
-                                <p className="text-sm font-mono text-gray-900">
-                                  {truncateAddress(doc.owner)}
-                                </p>
-                              </div>
-                            </div>
+                          )}
+                          <div className="mt-2 flex items-center gap-3">
+                            <FingerprintStrip hash={doc.documentHash} className="!h-1.5 max-w-[160px]" />
+                            <span className="font-mono text-xs text-ink-soft">
+                              {truncateMiddle(doc.documentHash, 10, 8)}
+                            </span>
                           </div>
+                        </div>
 
-                          <div className="flex flex-col space-y-2 ml-4">
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(doc.documentHash);
-                                alert('Document hash copied to clipboard!');
-                              }}
-                              className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 text-xs font-medium transition-colors duration-200"
+                        <div className="flex items-center justify-between gap-4 sm:justify-end">
+                          <span className="text-sm text-ink-soft tabular-nums">{formatDate(doc.timestamp)}</span>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              className="!h-8 !px-2.5 text-xs"
+                              onClick={() => handleCopy(doc.documentHash, 'Document hash')}
                             >
-                              Copy Hash
-                            </button>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(doc.documentName);
-                                alert('Document name copied to clipboard!');
-                              }}
-                              className="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-xs font-medium transition-colors duration-200"
+                              <CopyIcon className="size-3.5" />
+                              Hash
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="!h-8 !px-2.5 text-xs"
+                              onClick={() => handleCopy(doc.documentName, 'Document name')}
                             >
-                              Copy Name
-                            </button>
+                              <CopyIcon className="size-3.5" />
+                              Name
+                            </Button>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {isUpdateSuccess && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-green-800">Document name updated successfully!</p>
-                </div>
-              </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-          )}
-
-          {updateError && (
-            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
-                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-red-800">Failed to update document name</p>
-                  <p className="text-xs text-red-600 mt-1">{updateError.message}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
-            All your registered documents are stored on the blockchain and can be verified anytime
-          </p>
-        </div>
+          )
+        )}
       </div>
     </div>
   );
-}; 
+};
